@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fleet Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 14px/1.4 system-ui, sans-serif; display: flex; height: 100vh; color: #1f2937; }
+    aside { width: 340px; padding: 16px; overflow-y: auto; background: #f8fafc; border-right: 1px solid #e2e8f0; }
+    #map { flex: 1; }
+    h1 { font-size: 18px; margin: 0 0 12px; }
+    h2 { font-size: 13px; text-transform: uppercase; color: #64748b; margin: 18px 0 6px; letter-spacing: .04em; }
+    label { display: block; font-size: 12px; color: #475569; margin-top: 6px; }
+    input, select { width: 100%; padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 6px; font: inherit; }
+    .row { display: flex; gap: 8px; } .row > * { flex: 1; }
+    button { margin-top: 10px; width: 100%; padding: 8px; border: 0; border-radius: 6px; background: #2563eb; color: #fff; font-weight: 600; cursor: pointer; }
+    button.secondary { background: #475569; }
+    #status { margin-top: 10px; font-size: 12px; padding: 6px 8px; border-radius: 6px; background: #e2e8f0; white-space: pre-wrap; }
+    #status.err { background: #fee2e2; color: #991b1b; } #status.ok { background: #dcfce7; color: #166534; }
+    ul { list-style: none; padding: 0; margin: 0; }
+    li { padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 6px; background: #fff; cursor: pointer; }
+    li b { display: block; } li small { color: #64748b; }
+    .badge { float: right; font-size: 11px; padding: 1px 6px; border-radius: 10px; background: #e0e7ff; color: #3730a3; }
+  </style>
+</head>
+<body>
+  <aside>
+    <h1>🚚 Fleet Map</h1>
+    <h2>1 · Authenticate</h2>
+    <label>API key (gateway)</label><input id="apiKey" value="fleet-demo-key-123" />
+    <div class="row">
+      <div><label>Email</label><input id="email" value="admin@fleet.com" /></div>
+      <div><label>Password</label><input id="password" type="password" value="admin123" /></div>
+    </div>
+    <button id="loginBtn">Log in</button>
+
+    <h2>2 · Nearby search</h2>
+    <label>Address (optional — geocoded via OpenStreetMap)</label><input id="address" placeholder="e.g. MG Road, Bengaluru" />
+    <div class="row">
+      <div><label>Latitude</label><input id="lat" value="12.9716" /></div>
+      <div><label>Longitude</label><input id="lng" value="77.5946" /></div>
+    </div>
+    <label>Radius (km)</label><input id="radius" type="number" value="5" min="0.1" step="0.5" />
+    <button id="searchBtn">Find nearby vehicles</button>
+    <button id="allBtn" class="secondary">Show all vehicles</button>
+    <div id="status">Click the map to set the search centre.</div>
+
+    <h2>Results</h2>
+    <ul id="results"></ul>
+  </aside>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let token = null;
+    const map = L.map('map').setView([12.9716, 77.5946], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+    const layer = L.layerGroup().addTo(map);
+    const colors = { active: '#16a34a', idle: '#ca8a04', maintenance: '#2563eb', out_of_service: '#dc2626' };
+
+    function setStatus(msg, cls = '') { const s = $('status'); s.textContent = msg; s.className = cls; }
+
+    async function api(path) {
+      const res = await fetch(path, { headers: { 'x-api-key': $('apiKey').value, ...(token && { Authorization: `Bearer ${token}` }) } });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(`${res.status}: ${body.error?.message || res.statusText}`);
+      return body;
+    }
+
+    function marker(lat, lng, v, highlight) {
+      return L.circleMarker([lat, lng], { radius: highlight ? 10 : 7, color: '#fff', weight: 2, fillColor: colors[v.status] || '#64748b', fillOpacity: 0.95 })
+        .bindPopup(`<b>${v.plateNumber}</b><br>${v.make || ''} ${v.model || ''}<br>Status: ${v.status}${v.distanceKm !== undefined ? `<br>Distance: ${v.distanceKm} km` : ''}`);
+    }
+
+    function renderList(vehicles) {
+      $('results').innerHTML = '';
+      vehicles.forEach((v) => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span class="badge">${v.status}</span><b>${v.plateNumber}</b><small>${v.make || ''} ${v.model || ''}${v.distanceKm !== undefined ? ` · ${v.distanceKm} km` : ''}</small>`;
+        li.onclick = () => map.setView([v.latitude, v.longitude], 15);
+        $('results').appendChild(li);
+      });
+    }
+
+    $('loginBtn').onclick = async () => {
+      try {
+        const res = await fetch('/api/users/login', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': $('apiKey').value }, body: JSON.stringify({ email: $('email').value, password: $('password').value }) });
+        const body = await res.json();
+        if (!res.ok) throw new Error(`${res.status}: ${body.error?.message}`);
+        token = body.token;
+        setStatus(`Logged in as ${body.user.name} (${body.user.role})`, 'ok');
+        $('allBtn').click();
+      } catch (e) { setStatus(e.message, 'err'); }
+    };
+
+    $('allBtn').onclick = async () => {
+      try {
+        const fc = await api('/api/maps/vehicles');
+        layer.clearLayers();
+        const vs = fc.features.map((f) => ({ ...f.properties, latitude: f.geometry.coordinates[1], longitude: f.geometry.coordinates[0] }));
+        vs.forEach((v) => marker(v.latitude, v.longitude, v).addTo(layer));
+        if (vs.length) map.fitBounds(vs.map((v) => [v.latitude, v.longitude]), { padding: [40, 40] });
+        renderList(vs);
+        setStatus(`${vs.length} vehicles on the map`, 'ok');
+      } catch (e) { setStatus(e.message, 'err'); }
+    };
+
+    $('searchBtn').onclick = async () => {
+      try {
+        const q = new URLSearchParams({ radius: $('radius').value });
+        if ($('address').value.trim()) q.set('address', $('address').value.trim());
+        else { q.set('lat', $('lat').value); q.set('lng', $('lng').value); }
+        const r = await api(`/api/maps/nearby?${q}`);
+        layer.clearLayers();
+        const c = [r.center.latitude, r.center.longitude];
+        $('lat').value = c[0]; $('lng').value = c[1];
+        const circle = L.circle(c, { radius: r.radiusKm * 1000, color: '#2563eb', fillOpacity: 0.08 }).addTo(layer);
+        L.marker(c).bindPopup(r.center.address || 'Search centre').addTo(layer);
+        r.vehicles.forEach((v) => marker(v.latitude, v.longitude, v, true).addTo(layer));
+        map.fitBounds(circle.getBounds(), { padding: [20, 20] });
+        renderList(r.vehicles);
+        setStatus(`${r.count} vehicle(s) within ${r.radiusKm} km`, 'ok');
+      } catch (e) { setStatus(e.message, 'err'); }
+    };
+
+    map.on('click', (e) => { $('lat').value = e.latlng.lat.toFixed(5); $('lng').value = e.latlng.lng.toFixed(5); $('address').value = ''; setStatus('Centre set — press "Find nearby vehicles".'); });
+  </script>
+</body>
+</html>
