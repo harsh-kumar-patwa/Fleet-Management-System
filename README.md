@@ -98,7 +98,7 @@ Notes:
 * Data is in memory and resets to the seed data on every restart.
 * SMS uses the stub unless you add `TWILIO_*` env vars in the Render dashboard.
 
-A `Dockerfile` is included for any Docker host. CI (`.github/workflows/ci.yml`) runs the test suite on Node 18, 20 and 22 on every push.
+A `Dockerfile` is included for any Docker host. CI (`.github/workflows/ci.yml`) runs the test suite on Node 20, 22 and 24 on every push.
 
 **Deployed URL:** https://fleet-management-system-5ssz.onrender.com
 
