@@ -87,19 +87,24 @@ ENV_STATUS=$(aws elasticbeanstalk describe-environments --application-name PaaS-
 if none "$ENV_STATUS" || [ "$ENV_STATUS" = "Terminated" ]; then
   STACK=$(aws elasticbeanstalk list-available-solution-stacks --query "SolutionStacks[?contains(@,'Amazon Linux 2023') && contains(@,'Node.js')] | [0]" --output text)
   echo "Platform: $STACK"
+  cat > /tmp/eb-opts.json <<EOF
+[
+ {"Namespace":"aws:elasticbeanstalk:environment","OptionName":"EnvironmentType","Value":"LoadBalanced"},
+ {"Namespace":"aws:elasticbeanstalk:environment","OptionName":"LoadBalancerType","Value":"application"},
+ {"Namespace":"aws:elasticbeanstalk:environment","OptionName":"ServiceRole","Value":"aws-elasticbeanstalk-service-role"},
+ {"Namespace":"aws:autoscaling:launchconfiguration","OptionName":"IamInstanceProfile","Value":"aws-elasticbeanstalk-ec2-role"},
+ {"Namespace":"aws:ec2:instances","OptionName":"InstanceTypes","Value":"$INSTANCE_TYPE"},
+ {"Namespace":"aws:autoscaling:asg","OptionName":"MinSize","Value":"1"},
+ {"Namespace":"aws:autoscaling:asg","OptionName":"MaxSize","Value":"2"},
+ {"Namespace":"aws:ec2:vpc","OptionName":"VPCId","Value":"$WEB_VPC"},
+ {"Namespace":"aws:ec2:vpc","OptionName":"Subnets","Value":"$PUB1,$PUB2"},
+ {"Namespace":"aws:ec2:vpc","OptionName":"ELBSubnets","Value":"$PUB1,$PUB2"},
+ {"Namespace":"aws:ec2:vpc","OptionName":"AssociatePublicIpAddress","Value":"true"}
+]
+EOF
   aws elasticbeanstalk create-environment --application-name PaaS-Web-App --environment-name PaaS-Web-App-env \
-    --cname-prefix "paas-web-app-$(openssl rand -hex 3)" --solution-stack-name "$STACK" --option-settings \
-    Namespace=aws:elasticbeanstalk:environment,OptionName=EnvironmentType,Value=LoadBalanced \
-    Namespace=aws:elasticbeanstalk:environment,OptionName=LoadBalancerType,Value=application \
-    Namespace=aws:elasticbeanstalk:environment,OptionName=ServiceRole,Value=aws-elasticbeanstalk-service-role \
-    Namespace=aws:autoscaling:launchconfiguration,OptionName=IamInstanceProfile,Value=aws-elasticbeanstalk-ec2-role \
-    Namespace=aws:ec2:instances,OptionName=InstanceTypes,Value="$INSTANCE_TYPE" \
-    Namespace=aws:autoscaling:asg,OptionName=MinSize,Value=1 \
-    Namespace=aws:autoscaling:asg,OptionName=MaxSize,Value=2 \
-    Namespace=aws:ec2:vpc,OptionName=VPCId,Value="$WEB_VPC" \
-    "Namespace=aws:ec2:vpc,OptionName=Subnets,Value=$PUB1,$PUB2" \
-    "Namespace=aws:ec2:vpc,OptionName=ELBSubnets,Value=$PUB1,$PUB2" \
-    Namespace=aws:ec2:vpc,OptionName=AssociatePublicIpAddress,Value=true >/dev/null
+    --cname-prefix "paas-web-app-$(openssl rand -hex 3)" --solution-stack-name "$STACK" \
+    --option-settings file:///tmp/eb-opts.json >/dev/null
   echo "Beanstalk environment creation started (takes ~5-8 min, continuing in parallel)."
 fi
 
