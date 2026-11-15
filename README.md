@@ -1,5 +1,7 @@
 # Fleet Management System: Part 2
 
+**Live demo:** https://fleet-management-system-5ssz.onrender.com · **API docs:** https://fleet-management-system-5ssz.onrender.com/docs
+
 Third-party integrations (geolocation and SMS), an Express **API Gateway**, **Swagger/OpenAPI** docs and a **Mocha/Chai** test suite for a fleet management backend.
 
 ## Architecture
@@ -98,7 +100,13 @@ Notes:
 
 A `Dockerfile` is included for any Docker host. CI (`.github/workflows/ci.yml`) runs the test suite on Node 18, 20 and 22 on every push.
 
-**Deployed URL:** _add after deploying_
+**Deployed URL:** https://fleet-management-system-5ssz.onrender.com
+
+* Home: https://fleet-management-system-5ssz.onrender.com/
+* Swagger UI: https://fleet-management-system-5ssz.onrender.com/docs
+* Map: https://fleet-management-system-5ssz.onrender.com/map.html
+* Screenshots: https://fleet-management-system-5ssz.onrender.com/screenshots
+* Service health: https://fleet-management-system-5ssz.onrender.com/health/services
 
 ## Features
 
