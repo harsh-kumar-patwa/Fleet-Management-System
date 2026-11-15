@@ -35,7 +35,9 @@ npm start                       # live OpenStreetMap geocoding
 npm run dev                     # offline mock geocoder (GEO_PROVIDER=mock)
 ```
 
+* Home: http://localhost:3000/
 * Swagger UI: http://localhost:3000/docs (raw spec at `/openapi.json`)
+* Screenshots: http://localhost:3000/screenshots
 * Map UI: http://localhost:3000/map.html (Leaflet + OpenStreetMap tiles)
 * Gateway health: http://localhost:3000/health and `/health/services`
 
@@ -69,6 +71,34 @@ curl -X POST localhost:3000/api/telemetry -H "x-api-key: $K" -H "Authorization: 
 # notification log
 curl localhost:3000/api/notifications -H "x-api-key: $K" -H "Authorization: Bearer $TOKEN"
 ```
+
+## Deployment (Render)
+
+The whole system runs as one Render web service from `render.yaml`: the gateway, all 5 services, Swagger UI, the map and the screenshots gallery.
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/harsh-kumar-patwa/Fleet-Management-System)
+
+1. Sign in to [render.com](https://render.com) with GitHub, then click the button above (or go to **New → Blueprint** and pick this repo).
+2. Render reads `render.yaml`, installs dependencies, runs `node src/index.js` and generates a random `JWT_SECRET`.
+3. Open `https://<your-service>.onrender.com`:
+
+| Path | What |
+|---|---|
+| `/` | Landing page with links and demo credentials |
+| `/docs` | Swagger UI |
+| `/map.html` | Map: vehicle locations and nearby search |
+| `/screenshots` | Deliverable screenshots |
+| `/health/services` | Health of all services |
+| `/api/...` | REST API (needs `x-api-key`) |
+
+Notes:
+* The free plan sleeps after 15 minutes idle, so the first request takes about 30 s.
+* Data is in memory and resets to the seed data on every restart.
+* SMS uses the stub unless you add `TWILIO_*` env vars in the Render dashboard.
+
+A `Dockerfile` is included for any Docker host. CI (`.github/workflows/ci.yml`) runs the test suite on Node 18, 20 and 22 on every push.
+
+**Deployed URL:** _add after deploying_
 
 ## Features
 

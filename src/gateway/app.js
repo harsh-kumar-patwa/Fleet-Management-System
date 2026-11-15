@@ -22,6 +22,7 @@ const errorBody = (status, message, extra = {}) => ({ error: { status, message, 
 function createGateway({ routes, apiKeys, rateLimit, timeoutMs = 10_000, logger = console }) {
   const app = express();
   app.disable('x-powered-by');
+  app.set('trust proxy', 1); // behind Render / load balancer
   const keys = new Set(apiKeys);
   const limiter = rateLimiter(rateLimit);
   app.locals.limiter = limiter;
@@ -55,7 +56,8 @@ function createGateway({ routes, apiKeys, rateLimit, timeoutMs = 10_000, logger 
   app.get('/openapi.json', (_req, res) => res.json(openapi));
   app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapi, { customSiteTitle: 'Fleet Management API Docs', swaggerOptions: { persistAuthorization: true } }));
   app.use(express.static(path.join(__dirname, '..', '..', 'public')));
-  app.get('/', (_req, res) => res.redirect('/docs'));
+  app.get('/screenshots', (_req, res) => res.sendFile(path.join(__dirname, '..', '..', 'public', 'screenshots.html')));
+  app.use('/screenshots', express.static(path.join(__dirname, '..', '..', 'docs', 'screenshots')));
 
   // API key verification
   app.use('/api', (req, res, next) => {

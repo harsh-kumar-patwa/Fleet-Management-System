@@ -1,0 +1,20 @@
+# One-click deploy: https://render.com/deploy?repo=https://github.com/harsh-kumar-patwa/Fleet-Management-System
+services:
+  - type: web
+    name: fleet-management-api
+    runtime: node
+    plan: free
+    buildCommand: npm ci --omit=dev
+    startCommand: node src/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GEO_PROVIDER
+        value: nominatim
+      - key: API_KEYS
+        value: fleet-demo-key-123,fleet-admin-key-456
+      - key: RATE_LIMIT_MAX
+        value: "100"

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fleet Management System</title>
+<style>
+body{margin:0;font:15px/1.55 system-ui,sans-serif;color:#1f2937;background:#f8fafc}
+main{max-width:860px;margin:auto;padding:32px 16px}h1{margin:0 0 4px}p.sub{color:#64748b;margin:0 0 24px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+a.card{display:block;padding:16px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;text-decoration:none;color:inherit}
+a.card:hover{border-color:#2563eb}a.card b{display:block;color:#2563eb;margin-bottom:4px}
+code{background:#e2e8f0;padding:1px 5px;border-radius:4px}table{border-collapse:collapse;margin-top:8px}td{padding:4px 12px 4px 0}
+</style></head><body><main>
+<h1>🚚 Fleet Management System</h1>
+<p class="sub">API Gateway · Geolocation (OpenStreetMap) · SMS notifications · Swagger docs</p>
+<div class="grid">
+  <a class="card" href="/docs"><b>Swagger UI →</b>Interactive API documentation for every endpoint.</a>
+  <a class="card" href="/map.html"><b>Fleet map →</b>Vehicle locations and nearby-vehicle search.</a>
+  <a class="card" href="/screenshots"><b>Screenshots →</b>Geolocation, SMS, gateway and Swagger demos.</a>
+  <a class="card" href="/health/services"><b>Service health →</b>Status of the gateway and all 5 services.</a>
+</div>
+<h3>Demo credentials</h3>
+<table>
+<tr><td>API key (header <code>x-api-key</code>)</td><td><code>fleet-demo-key-123</code></td></tr>
+<tr><td>Admin</td><td><code>admin@fleet.com</code> / <code>admin123</code></td></tr>
+<tr><td>Fleet manager</td><td><code>manager@fleet.com</code> / <code>manager123</code></td></tr>
+<tr><td>Driver</td><td><code>driver@fleet.com</code> / <code>driver123</code></td></tr>
+</table>
+<p>Gateway routes: <code>/api/users/*</code>, <code>/api/vehicles/*</code>, <code>/api/telemetry/*</code>, <code>/api/maps/*</code>, <code>/api/notifications/*</code></p>
+</main></body></html>
